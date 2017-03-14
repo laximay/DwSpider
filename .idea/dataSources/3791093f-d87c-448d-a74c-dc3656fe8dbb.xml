@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataSource name="dw_spider@localhost">
+  <database-model serializer="dbm" rdbms="MYSQL" format-version="4.1">
+    <root id="1"/>
+    <schema id="2" parent="1" name="dw_spider">
+      <Current>1</Current>
+      <Visible>1</Visible>
+    </schema>
+    <schema id="3" parent="1" name="information_schema"/>
+    <schema id="4" parent="1" name="mysql"/>
+    <schema id="5" parent="1" name="nutch"/>
+    <schema id="6" parent="1" name="performance_schema"/>
+    <schema id="7" parent="1" name="seckill"/>
+    <schema id="8" parent="1" name="sys"/>
+    <schema id="9" parent="1" name="testdb"/>
+    <table id="10" parent="2" name="cas_prodecut">
+      <Comment>化学产品表</Comment>
+    </table>
+    <table id="11" parent="2" name="indexs">
+      <Comment>索引页面</Comment>
+    </table>
+    <column id="12" parent="10" name="cas_name">
+      <Position>1</Position>
+      <Comment>化合物英文学名</Comment>
+      <DataType>varchar(100)|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="13" parent="10" name="cas_no">
+      <Position>2</Position>
+      <Comment>产品编号
+</Comment>
+      <DataType>varchar(50)|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="14" parent="10" name="synonyms">
+      <Position>3</Position>
+      <Comment>同义词</Comment>
+      <DataType>varchar(200)|0</DataType>
+    </column>
+    <column id="15" parent="10" name="formula">
+      <Position>4</Position>
+      <Comment>化学公式</Comment>
+      <DataType>varchar(50)|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="16" parent="10" name="exact_mass">
+      <Position>5</Position>
+      <Comment>精确质量</Comment>
+      <DataType>varchar(50)|0</DataType>
+    </column>
+    <column id="17" parent="10" name="molecular_weight">
+      <Position>6</Position>
+      <Comment>分子量</Comment>
+      <DataType>varchar(50)|0</DataType>
+    </column>
+    <column id="18" parent="10" name="psa">
+      <Position>7</Position>
+      <DataType>varchar(50)|0</DataType>
+    </column>
+    <column id="19" parent="10" name="logp">
+      <Position>8</Position>
+      <DataType>varchar(50)|0</DataType>
+    </column>
+    <key id="20" parent="10" name="PRIMARY">
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>cas_name</ColNames>
+      <Primary>1</Primary>
+    </key>
+    <column id="21" parent="11" name="url">
+      <Position>1</Position>
+      <Comment>索引的链接</Comment>
+      <DataType>varchar(500)|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="22" parent="11" name="visited">
+      <Position>2</Position>
+      <Comment>是否已经收录</Comment>
+      <DataType>int(11)|0</DataType>
+    </column>
+    <key id="23" parent="11" name="PRIMARY">
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>url</ColNames>
+      <Primary>1</Primary>
+    </key>
+  </database-model>
+</dataSource>
