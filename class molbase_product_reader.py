@@ -66,101 +66,125 @@ class dw_spider:
                 href=re.compile("www.molbase.com/en/chemical-products"))  ## 获取当前页面的所有索引，
             for pageUrl in pagination:
                 pageUrl_Real = "http:" + pageUrl.get('href')
-
+                indexInfo = [];  # 用来存放内容的列表
+                indexInfo.append(pageUrl_Real)
+                indexInfo.append(1)
+                self.saveIndex(indexInfo)
                 if pageUrl_Real not in self.queue and pageUrl_Real not in self.visited:  ## 判断是否访问过，或者已经收录过
                     print("正在收录索引页面：" + pageUrl_Real)
                     self.queue.append(pageUrl_Real)
 
-            # casListBox_tb = indexSoup.html.body.find('table', {'class', 'casListBox'})
-            # casListBox = indexSoup.find_all(href=re.compile("moldata"))  ## 获取当前页面的所有索引，
-            # for pageUrl in casListBox:
-            #     pageUrl_Real = "http:" + pageUrl.get('href')
-            #     # print("正在收录产品页面：" + pageUrl_Real)
-            #     if pageUrl_Real not in self.pro_queue and pageUrl_Real not in self.pro_queue:  ## 判断是否访问过，或者已经收录过
-            #         self.pro_queue.append(pageUrl_Real)
-            # print("正在收录产品页面数量：" + str(len(self.pro_queue)))
-            # self.readProducts(pageUrl_Real)
+                casListBox_tb = indexSoup.html.body.find('table', {'class', 'casListBox'})
+                casListBox = indexSoup.find_all(href=re.compile("moldata"))  ## 获取当前页面的所有索引，
+                for pageUrl in casListBox:
+                    pageUrl_Real = "http:" + pageUrl.get('href')
+                    # print("正在收录产品页面：" + pageUrl_Real)
+                    if pageUrl_Real not in self.pro_queue and pageUrl_Real not in self.pro_queue:  ## 判断是否访问过，或者已经收录过
+                        self.pro_queue.append(pageUrl_Real)
+                        indexInfo.append(pageUrl_Real)
+                        indexInfo.append(1)
+                        self.saveIndex(indexInfo)
+                print("正在收录产品页面数量：" + str(len(self.pro_queue)))
 
-    def readProducts(self, productUrl):
-        openFlag = 0;  # 打开
-        req = urllib.request.Request(url=productUrl, headers=self.headers)
-        try:
-            response = urllib.request.urlopen(req)
-        except:
-            print("访问失败，正在重试")
+
+
+
+def readProducts(self, productUrl):
+    openFlag = 0;  # 打开
+    req = urllib.request.Request(url=productUrl, headers=self.headers)
+    try:
+        response = urllib.request.urlopen(req)
+    except:
+        print("访问失败，正在重试")
+        self.readProducts(productUrl)
+    else:
+        type = sys.getfilesystemencoding()  # 转换成本地系统编码 重要代码！！
+        data = response.read().decode(type)
+        indexSoup = BeautifulSoup(data, "lxml")
+        iserror = indexSoup.find_all(text=re.compile("异常流量"))
+        if len(iserror) > 0:
+            print("异常流量")
             self.readProducts(productUrl)
         else:
-            type = sys.getfilesystemencoding()  # 转换成本地系统编码 重要代码！！
-            data = response.read().decode(type)
-            indexSoup = BeautifulSoup(data, "lxml")
-            iserror = indexSoup.find_all(text=re.compile("异常流量"))
-            if len(iserror) > 0:
-                print("异常流量")
-                self.readProducts(productUrl)
+            self.pro_visited |= {productUrl}  # 移到已访问的集合
+
+            # 获取文字内容，并保存入数据库
+            productInfo_html = indexSoup.html.body.find('table', {'class', 'pinfo'})
+            productInfo = [];  # 用来存放内容的列表
+            if (productInfo_html):
+                rows = productInfo_html.find_all('tr')
+                for row in rows:
+                    cols = row.find_all('td')
+                    cols = [ele.text.strip() for ele in cols]
+                    productInfo.append(cols[0])
+                productInfo.append(productUrl)
+                self.saveBrief(productInfo)  # 保存数据进数据库
             else:
-                self.pro_visited |= {productUrl}  # 移到已访问的集合
+                self.readProducts(productUrl)
+            # 保存图片操作
+            imgUrl = indexSoup.find("img", id="listimg_1")
+            self.saveImg("http:" + imgUrl.get('src'), productInfo[1])
 
-                # 获取文字内容，并保存入数据库
-                productInfo_html = indexSoup.html.body.find('table', {'class', 'pinfo'})
-                productInfo = [];  # 用来存放内容的列表
-                if (productInfo_html):
-                    rows = productInfo_html.find_all('tr')
-                    for row in rows:
-                        cols = row.find_all('td')
-                        cols = [ele.text.strip() for ele in cols]
-                        productInfo.append(cols[0])
-                    self.saveBrief(productInfo)  # 保存数据进数据库
-                else:
-                    self.readProducts(productUrl)
-                # 保存图片操作
-                imgUrl = indexSoup.find("img", id="listimg_1")
-                self.saveImg("http:" + imgUrl.get('src'), productInfo[1])
 
-    def mkdir(self, path):
-        path = path.strip()
-        # 判断路径是否存在
-        # 存在     True
-        # 不存在   False
-        isExists = os.path.exists(path)
-        # 判断结果
-        if not isExists:
-            # 如果不存在则创建目录
-            print("正在保存", path)
-            # 创建目录操作函数
-            os.makedirs(path)
-            return True
-        else:
-            # 如果目录存在则不创建，并提示目录已存在
-            print(path, "已经创建")
-            return False
-            # 传入图片地址，文件名，保存单张图片
+def mkdir(self, path):
+    path = path.strip()
+    # 判断路径是否存在
+    # 存在     True
+    # 不存在   False
+    isExists = os.path.exists(path)
+    # 判断结果
+    if not isExists:
+        # 如果不存在则创建目录
+        print("正在保存", path)
+        # 创建目录操作函数
+        os.makedirs(path)
+        return True
+    else:
+        # 如果目录存在则不创建，并提示目录已存在
+        print(path, "已经创建")
+        return False
+        # 传入图片地址，文件名，保存单张图片
 
-    # 保存图片
-    def saveImg(self, imageURL, fileName):
 
-        try:
-            data = urllib.request.urlopen(imageURL).read()
-        except:
-            print("访问失败图片，正在重试")
-            self.saveImg(imageURL, fileName)
-        else:
-            fileName = self.cas_img + "/" + fileName + ".png"
-        f = open(fileName, 'wb')
-        f.write(data)
-        print(u"保存了一张图片", fileName)
-        f.close()
-        # 保存个人简介
+# 保存图片
+def saveImg(self, imageURL, fileName):
+    try:
+        data = urllib.request.urlopen(imageURL).read()
+    except:
+        print("访问失败图片，正在重试")
+        self.saveImg(imageURL, fileName)
+    else:
+        fileName = self.cas_img + "/" + fileName + ".png"
+    f = open(fileName, 'wb')
+    f.write(data)
+    print(u"保存了一张图片", fileName)
+    f.close()
+    # 保存个人简介
+
+
+# 保存产品资料
+def saveBrief(self, content):
+    conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='db19881122',
+                           db='dw_spider')
+    cur = conn.cursor()
+    sql = "INSERT IGNORE INTO `cas_prodecut` VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"  # 保存入数据库
+    cur.execute(sql, (content))
+    conn.commit()
+    cur.close()
+    conn.close()
 
     # 保存产品资料
-    def saveBrief(self, content):
-        conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='db19881122',
-                               db='dw_spider')
-        cur = conn.cursor()
-        sql = "INSERT IGNORE INTO `cas_prodecut` VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"  # 保存入数据库
-        cur.execute(sql, (content))
-        conn.commit()
-        cur.close()
-        conn.close()
+
+
+def saveIndex(self, content):
+    conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='db19881122',
+                           db='dw_spider')
+    cur = conn.cursor()
+    sql = "INSERT IGNORE INTO `indexs` VALUES (%s, %s)"  # 保存入数据库
+    cur.execute(sql, (content))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 dw_spider = dw_spider()
